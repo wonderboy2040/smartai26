@@ -16,6 +16,7 @@ export interface ETF {
   trend: string;
   support: number;
   resistance: number;
+  holdings: number; // Portfolio quantity ke liye
 }
 
 export interface NewsItem {
@@ -35,14 +36,6 @@ export interface AIInsight {
   description: string;
   confidence: number;
   etfSymbol?: string;
-}
-
-export interface PortfolioStats {
-  totalValue: number;
-  dailyChange: number;
-  dailyChangePercent: number;
-  totalGain: number;
-  totalGainPercent: number;
 }
 
 export interface AIPerformance {

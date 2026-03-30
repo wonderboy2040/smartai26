@@ -3,15 +3,18 @@ import { ETF } from '../types';
 import { initialETFs } from '../data';
 
 export function useETFData() {
-  // Sync logic: Fetch saved portfolio directly on load
   const [etfs, setEtfs] = useState<ETF[]>(() => {
-    const saved = localStorage.getItem('smartai_portfolio_sync');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return initialETFs.map(etf => {
-        const savedETF = parsed.find((p: ETF) => p.id === etf.id);
-        return savedETF ? { ...etf, holdings: savedETF.holdings } : etf;
-      });
+    try {
+      const saved = localStorage.getItem('smartai_portfolio_sync');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return initialETFs.map(etf => {
+          const savedETF = parsed.find((p: ETF) => p.id === etf.id);
+          return savedETF ? { ...etf, holdings: savedETF.holdings || 0 } : etf;
+        });
+      }
+    } catch (e) {
+      console.error("Sync error", e);
     }
     return initialETFs;
   });
@@ -20,11 +23,12 @@ export function useETFData() {
   const [usdInrRate, setUsdInrRate] = useState<number>(83.50);
   const flashMap = useRef<Map<string, 'up' | 'down'>>(new Map());
 
-  // Auto-Sync across tabs / mobile app logic (Local Storage)
+  // Cloud/Local Sync
   useEffect(() => {
     localStorage.setItem('smartai_portfolio_sync', JSON.stringify(etfs));
   }, [etfs]);
 
+  // Live Exchange Rate
   useEffect(() => {
     const fetchExchangeRate = async () => {
       try {
@@ -42,7 +46,7 @@ export function useETFData() {
     return () => clearInterval(interval);
   }, []);
 
-  // Ultra-Fast Live Price Simulation
+  // Ultra-Fast Price Simulation
   useEffect(() => {
     const interval = setInterval(() => {
       setEtfs(prevEtfs => 
@@ -59,7 +63,6 @@ export function useETFData() {
       );
       setTimeout(() => flashMap.current.clear(), 300); 
     }, 1500);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -71,8 +74,7 @@ export function useETFData() {
   const selectETF = useCallback((etf: ETF) => setSelectedETF(etf), []);
   const getFlash = useCallback((id: string) => flashMap.current.get(id), []);
   
-  // Naya function: Qty update ke liye (fractional digits allow karega)
-  const updateHoldings = useCallback((id: string, qty: number | string) => {
+  const updateHoldings = useCallback((id: string, qty: string) => {
     setEtfs(prev => prev.map(etf => etf.id === id ? { ...etf, holdings: Number(qty) || 0 } : etf));
   }, []);
 

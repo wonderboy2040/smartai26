@@ -10,10 +10,19 @@ export const initialETFs: ETF[] = [
   // --- USA ETFs ---
   { id: '5', symbol: 'SMH', name: 'VanEck Semiconductor ETF', price: 225.50, prevPrice: 225.50, change: 5.10, changePercent: 2.31, volume: '8.5M', marketCap: '$18.2B', market: 'US', signal: 'BUY', confidence: 94, rsi: 65, macd: 'Bullish', trend: 'Strong Uptrend', support: 215.00, resistance: 235.00, holdings: 0 },
   { id: '6', symbol: 'QQQM', name: 'Invesco NASDAQ 100 ETF', price: 185.30, prevPrice: 185.30, change: 2.45, changePercent: 1.34, volume: '4.2M', marketCap: '$25.4B', market: 'US', signal: 'BUY', confidence: 85, rsi: 62, macd: 'Bullish', trend: 'Uptrend', support: 178.00, resistance: 192.00, holdings: 0 },
-  { id: '7', symbol: 'XLK', name: 'Technology Select Sector', price: 210.80, prevPrice: 210.80, change: 3.20, changePercent: 1.54, volume: '6.7M', marketCap: '$65.8B', market: 'US', signal: 'HOLD', confidence: 78, rsi: 58, macd: 'Neutral', trend: 'Uptrend', support: 202.00, resistance: 218.00, holdings: 0 },
+  { id: '7', symbol: 'XLK', name: 'Technology Select Sector', price: 210.80, prevPrice: 210.80, change: 3.20, changePercent: 1.54, volume: '6.7M', marketCap: '$65.8B', market: 'US', signal: 'HOLD', confidence: 78, rsi: 58, macd: 'Neutral', trend: 'Uptrend', support: 202.00, resistance: 218.00, holdings: 0 }
 ];
 
-// Yahan same purana newsItems, aiInsights aur aiPerformance paste kar dein.
-export const newsItems: NewsItem[] = []; // ... Add your old data here
-export const aiInsights: AIInsight[] = []; // ... Add your old data here
-export const aiPerformance: AIPerformance = { accuracy: 94.2, sharpeRatio: 2.41, winRate: 78.6, maxDrawdown: 8.2, totalSignals: 1247, successfulSignals: 980 };
+export const newsItems: NewsItem[] = [
+  { id: 1, title: 'Semiconductor Demand Surges', summary: 'AI chip demand continues to outpace supply.', sentiment: 'bullish', source: 'Reuters', time: '18 min ago', impact: 'high' },
+  { id: 2, title: 'India Midcap Rally Continues', summary: 'Domestic inflows drive mid and small cap segments.', sentiment: 'bullish', source: 'Economic Times', time: '42 min ago', impact: 'high' }
+];
+
+export const aiInsights: AIInsight[] = [
+  { id: 1, type: 'opportunity', title: 'Strong Buy Signal: SMH', description: 'MACD crossover confirmed. AI projects upside.', confidence: 94, etfSymbol: 'SMH' },
+  { id: 2, type: 'info', title: 'India Markets Breakout', description: 'Momentum showing strong FII inflows.', confidence: 88, etfSymbol: 'MOMOMENTUM' }
+];
+
+export const aiPerformance: AIPerformance = {
+  accuracy: 94.2, sharpeRatio: 2.41, winRate: 78.6, maxDrawdown: 8.2, totalSignals: 1247, successfulSignals: 980
+};

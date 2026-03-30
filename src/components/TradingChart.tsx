@@ -12,15 +12,16 @@ export const TradingChart = memo(({ selectedETF }: TradingChartProps) => {
   useEffect(() => {
     if (!containerRef.current || !selectedETF) return;
     
+    // Purana chart clear karo taaki naya properly load ho
     containerRef.current.innerHTML = '';
     setIsChartReady(false);
 
-    // Advanced Symbol Mapping for Flawless Loading
+    // FIX: Advanced Symbol Mapping - TradingView uses 'NSE' for your Indian ETFs
     let tvSymbol = selectedETF.symbol;
     if (selectedETF.market === 'IN') {
-      // BSE generally has better ETF charting support on TradingView for India, but we use NSE as requested
-      tvSymbol = `BSE:${selectedETF.symbol}`; 
+      tvSymbol = `NSE:${selectedETF.symbol}`; // Fixed from BSE to NSE
     } else {
+      // US ETFs ke liye NASDAQ aur AMEX
       tvSymbol = selectedETF.symbol === 'XLK' ? `AMEX:XLK` : `NASDAQ:${selectedETF.symbol}`;
     }
 
@@ -59,6 +60,7 @@ export const TradingChart = memo(({ selectedETF }: TradingChartProps) => {
     
     containerRef.current.appendChild(script);
 
+    // Chart Loading Animation Timer
     const timer = setTimeout(() => setIsChartReady(true), 1000);
     return () => clearTimeout(timer);
   }, [selectedETF?.symbol, selectedETF?.market]);
@@ -79,12 +81,15 @@ export const TradingChart = memo(({ selectedETF }: TradingChartProps) => {
       position: 'relative'
     }}>
       <div style={{ position: 'relative', flex: 1, width: '100%', borderRadius: '8px', overflow: 'hidden' }}>
+        {/* Loading Spinner Indicator */}
         {!isChartReady && (
           <div style={{ position: 'absolute', inset: 0, background: '#0f0f1a', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
              <div className="animate-spin" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(139,92,246,0.2)', borderTopColor: '#8b5cf6' }}></div>
              <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600', letterSpacing: '0.05em' }}>CONNECTING WSS SERVER...</span>
           </div>
         )}
+        
+        {/* TradingView Widget Container */}
         <div className="tradingview-widget-container" ref={containerRef} style={{ height: '100%', width: '100%' }}>
           <div className="tradingview-widget-container__widget" style={{ height: '100%', width: '100%' }}></div>
         </div>

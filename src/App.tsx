@@ -1,244 +1,47 @@
 import { useState, useMemo } from 'react';
 import { Header } from './components/Header';
 import { StatCards } from './components/StatCards';
-import { TradingChart } from './components/TradingChart';
-import { ETFTable } from './components/ETFTable';
-import { AIAnalysis } from './components/AIAnalysis';
-import { AIInsights } from './components/AIInsights';
-import { NewsFeed } from './components/NewsFeed';
-import { AIPerformance } from './components/AIPerformance';
-import { useETFData } from './hooks/useETFData';
+// ...baki imports
 
 export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { etfs, selectedETF, selectETF, getFlash } = useETFData();
+  
+  // Naye functions fetch kiye hook se
+  const { etfs, selectedETF, selectETF, getFlash, usdInrRate, updateHoldings } = useETFData();
 
-  // Filter ETFs based on search
   const filteredETFs = useMemo(() => {
-    if (!searchQuery.trim()) return etfs;
-    const query = searchQuery.toLowerCase();
-    return etfs.filter(
-      etf =>
-        etf.symbol.toLowerCase().includes(query) ||
-        etf.name.toLowerCase().includes(query)
-    );
+    // search filter code same...
   }, [etfs, searchQuery]);
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #0f0f1a 100%)',
-    }}>
-      {/* Header */}
-      <Header searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+    <div style={{ /* app styles */ }}>
+      {/* Header ko bhi USD/INR rate pass kar sakte hain agar wahan dikhana ho */}
+      <Header searchQuery={searchQuery} onSearchChange={setSearchQuery} usdInrRate={usdInrRate} />
 
-      {/* Main Content */}
-      <main style={{
-        maxWidth: '1600px',
-        margin: '0 auto',
-        padding: '24px',
-      }}>
-        {/* Stat Cards Row */}
-        <StatCards etfs={etfs} />
+      <main style={{ maxWidth: '1600px', margin: '0 auto', padding: '24px' }}>
+        
+        {/* Yahan StatCards ko usdInrRate pass kar diya */}
+        <StatCards etfs={etfs} usdInrRate={usdInrRate} />
 
-        {/* Main Grid - Chart + AI Analysis */}
         <div className="chart-ai-grid" style={{ marginBottom: '24px' }}>
           <TradingChart selectedETF={selectedETF} />
           <AIAnalysis selectedETF={selectedETF} />
         </div>
 
-        {/* ETF Table */}
         <div style={{ marginBottom: '24px' }}>
+          {/* ETF Table me updateHoldings Prop bhej diya */}
           <ETFTable
             etfs={filteredETFs}
             selectedETF={selectedETF}
             onSelectETF={selectETF}
             getFlash={getFlash}
+            updateHoldings={updateHoldings}
           />
         </div>
 
-        {/* Bottom Grid - Insights + News + Performance */}
-        <div className="bottom-grid">
-          <AIInsights />
-          <NewsFeed />
-          <AIPerformance />
-        </div>
+        {/* Baki same code */}
       </main>
-
-      {/* Footer */}
-      <footer style={{
-        maxWidth: '1600px',
-        margin: '0 auto',
-        padding: '24px',
-        borderTop: '1px solid rgba(100, 100, 150, 0.2)',
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '16px',
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-          }}>
-            <span style={{ fontSize: '24px' }}>🧠</span>
-            <div>
-              <div style={{
-                fontSize: '14px',
-                fontWeight: '700',
-                color: '#fff',
-              }}>
-                DeepMind AI Portfolio Pro
-              </div>
-              <div style={{
-                fontSize: '11px',
-                color: '#64748b',
-              }}>
-                Advanced AI-Powered Trading Dashboard
-              </div>
-            </div>
-          </div>
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '24px',
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}>
-              <span className="animate-pulse" style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#22c55e',
-                boxShadow: '0 0 10px #22c55e',
-              }} />
-              <span style={{
-                fontSize: '12px',
-                color: '#22c55e',
-                fontWeight: '600',
-              }}>
-                All Systems Operational
-              </span>
-            </div>
-            
-            <div style={{
-              display: 'flex',
-              gap: '12px',
-            }}>
-              {['☁️ Cloud Sync', '🔒 Secure', '⚡ Real-time'].map(badge => (
-                <span key={badge} style={{
-                  fontSize: '11px',
-                  color: '#94a3b8',
-                  padding: '6px 12px',
-                  background: 'rgba(100, 100, 150, 0.15)',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(100, 100, 150, 0.2)',
-                }}>
-                  {badge}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </footer>
-
-      {/* Responsive Styles */}
-      <style>{`
-        /* Chart + AI Analysis Grid */
-        .chart-ai-grid {
-          display: grid;
-          grid-template-columns: 2fr 1fr;
-          gap: 24px;
-        }
-        
-        /* Bottom Grid */
-        .bottom-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 24px;
-        }
-        
-        /* Stats Grid */
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 16px;
-        }
-        
-        @media (max-width: 1400px) {
-          .chart-ai-grid {
-            grid-template-columns: 1.5fr 1fr !important;
-          }
-        }
-        
-        @media (max-width: 1200px) {
-          .chart-ai-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .bottom-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-        }
-        
-        @media (max-width: 900px) {
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-          .bottom-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-        
-        @media (max-width: 600px) {
-          .stats-grid {
-            grid-template-columns: 1fr !important;
-          }
-          
-          header > div {
-            flex-wrap: wrap;
-            height: auto !important;
-            padding: 12px 16px !important;
-            gap: 12px !important;
-          }
-          
-          header > div > div:nth-child(2) {
-            order: 3;
-            width: 100%;
-            max-width: 100% !important;
-          }
-          
-          main {
-            padding: 16px !important;
-          }
-          
-          footer > div {
-            flex-direction: column;
-            text-align: center;
-          }
-        }
-        
-        /* Smooth scrolling for the whole page */
-        html {
-          scroll-behavior: smooth;
-        }
-        
-        /* Table responsiveness */
-        @media (max-width: 800px) {
-          table {
-            font-size: 12px;
-          }
-          table th, table td {
-            padding: 10px 12px !important;
-          }
-        }
-      `}</style>
+      {/* Footer same */}
     </div>
   );
 }

@@ -7,7 +7,13 @@ export function useETFData() {
     try {
       const saved = localStorage.getItem('smartai_portfolio_sync');
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Merge saved holdings and avg prices with initial structure
+        return parsed.map((savedEtf: ETF) => ({
+          ...savedEtf,
+          holdings: savedEtf.holdings || 0,
+          avgBuyPrice: savedEtf.avgBuyPrice || 0
+        }));
       }
     } catch (e) {
       console.error("Sync error", e);
@@ -19,7 +25,7 @@ export function useETFData() {
   const [usdInrRate, setUsdInrRate] = useState<number>(83.50);
   const flashMap = useRef<Map<string, 'up' | 'down'>>(new Map());
 
-  // Cloud/Local Sync
+  // Auto-Sync
   useEffect(() => {
     localStorage.setItem('smartai_portfolio_sync', JSON.stringify(etfs));
   }, [etfs]);
@@ -49,7 +55,6 @@ export function useETFData() {
 
       const updatedEtfs = await Promise.all(etfs.map(async (etf) => {
         try {
-          // Fetch Real Market Data (India ke liye .NS append karna zaruri hai Yahoo Finance me)
           const yfSymbol = etf.market === 'IN' ? `${etf.symbol}.NS` : etf.symbol;
           const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${yfSymbol}?interval=1m`)}`;
           
@@ -66,15 +71,9 @@ export function useETFData() {
           if (currentPrice > etf.price) flashMap.current.set(etf.id, 'up');
           else if (currentPrice < etf.price) flashMap.current.set(etf.id, 'down');
 
-          return {
-            ...etf,
-            price: currentPrice,
-            prevPrice: etf.price,
-            change: change,
-            changePercent: changePercent,
-          };
+          return { ...etf, price: currentPrice, prevPrice: etf.price, change: change, changePercent: changePercent };
         } catch (error) {
-          // Smart Fallback: Agar API fail ho jaye toh smooth simulation chalta rahega
+          // Smart Fallback Simulator
           const volatility = etf.market === 'US' ? 0.05 : 0.2; 
           const priceChange = (Math.random() - 0.48) * volatility;
           const newPrice = +(etf.price + priceChange).toFixed(2);
@@ -90,10 +89,9 @@ export function useETFData() {
       setTimeout(() => flashMap.current.clear(), 300); 
     };
 
-    // Har 5 second me advanced fetch trigger hoga
     const interval = setInterval(fetchLivePrices, 5000);
     return () => clearInterval(interval);
-  }, [etfs]); // Depend on etfs to ensure new assets are fetched
+  }, [etfs]); 
 
   useEffect(() => {
     if (etfs.length > 0) {
@@ -106,20 +104,27 @@ export function useETFData() {
   const selectETF = useCallback((etf: ETF) => setSelectedETF(etf), []);
   const getFlash = useCallback((id: string) => flashMap.current.get(id), []);
   
-  // Feature: Update Qty
-  const updateHoldings = useCallback((id: string, qty: string) => {
-    setEtfs(prev => prev.map(etf => etf.id === id ? { ...etf, holdings: Number(qty) || 0 } : etf));
+  // NEW: Update Qty AND Avg Price together
+  const updateAssetDetails = useCallback((id: string, qty: string, avgPrice: string) => {
+    setEtfs(prev => prev.map(etf => etf.id === id ? { 
+      ...etf, 
+      holdings: Number(qty) || 0,
+      avgBuyPrice: Number(avgPrice) || 0 
+    } : etf));
   }, []);
 
-  // Feature: Add Asset
   const addAsset = useCallback((newAsset: ETF) => {
     setEtfs(prev => [...prev, newAsset]);
   }, []);
 
-  // Feature: Delete Asset
   const deleteAsset = useCallback((id: string) => {
     setEtfs(prev => prev.filter(etf => etf.id !== id));
   }, []);
 
-  return { etfs, selectedETF, selectETF, getFlash, usdInrRate, updateHoldings, addAsset, deleteAsset };
+  // Force manual save (for UI feedback)
+  const forceSave = useCallback(() => {
+    localStorage.setItem('smartai_portfolio_sync', JSON.stringify(etfs));
+  }, [etfs]);
+
+  return { etfs, selectedETF, selectETF, getFlash, usdInrRate, updateAssetDetails, addAsset, deleteAsset, forceSave };
 }

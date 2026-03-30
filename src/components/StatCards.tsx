@@ -6,57 +6,77 @@ interface StatCardsProps {
 }
 
 export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
-  const totalValueINR = etfs.reduce((sum, etf) => {
-    const value = etf.price * (etf.holdings || 0);
-    return sum + (etf.market === 'US' ? value * usdInrRate : value);
+  // Advanced Math for Portfolio Tracking
+  const totalInvestedINR = etfs.reduce((sum, etf) => {
+    const val = (etf.avgBuyPrice || 0) * (etf.holdings || 0);
+    return sum + (etf.market === 'US' ? val * usdInrRate : val);
   }, 0);
 
+  const totalCurrentValueINR = etfs.reduce((sum, etf) => {
+    const val = etf.price * (etf.holdings || 0);
+    return sum + (etf.market === 'US' ? val * usdInrRate : val);
+  }, 0);
+
+  const overallPL = totalCurrentValueINR - totalInvestedINR;
+  const overallPLPercent = totalInvestedINR > 0 ? (overallPL / totalInvestedINR) * 100 : 0;
+  
   const dailyPL = etfs.reduce((sum, etf) => {
     const pl = etf.change * (etf.holdings || 0);
     return sum + (etf.market === 'US' ? pl * usdInrRate : pl);
   }, 0);
+  const dailyPLPercent = totalCurrentValueINR > 0 ? ((dailyPL / (totalCurrentValueINR - dailyPL)) * 100) : 0;
   
-  const dailyPLPercent = totalValueINR > 0 ? ((dailyPL / (totalValueINR - dailyPL)) * 100) : 0;
-  
-  const buyCount = etfs.filter(e => e.signal === 'BUY').length;
-  const holdCount = etfs.filter(e => e.signal === 'HOLD').length;
-  const sellCount = etfs.filter(e => e.signal === 'SELL').length;
-  
-  const avgSentiment = etfs.reduce((sum, e) => sum + e.confidence, 0) / (etfs.length || 1);
+  const avgSentiment = etfs.length > 0 ? etfs.reduce((sum, e) => sum + e.confidence, 0) / etfs.length : 50;
 
-  const cardStyle: React.CSSProperties = {
-    background: 'rgba(20, 20, 35, 0.8)',
-    backdropFilter: 'blur(10px)',
-    borderRadius: '16px',
-    border: '1px solid rgba(100, 100, 150, 0.2)',
-    padding: '20px 24px',
-    transition: 'all 0.3s ease',
-  };
+  const cardStyle: React.CSSProperties = { background: 'rgba(20, 20, 35, 0.8)', backdropFilter: 'blur(10px)', borderRadius: '16px', border: '1px solid rgba(100, 100, 150, 0.2)', padding: '20px 24px', transition: 'all 0.3s ease' };
 
   return (
     <div className="stats-grid" style={{ marginBottom: '24px' }}>
+      
+      {/* 1. CURRENT VALUE & DAILY P&L */}
       <div style={{ ...cardStyle, borderTop: '3px solid #8b5cf6' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           <span style={{ fontSize: '20px' }}>💰</span>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Portfolio Value (INR)</span>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Value (INR)</span>
         </div>
         <div className="mono" style={{ fontSize: '28px', fontWeight: '700', color: '#fff', marginBottom: '8px' }}>
-          ₹{totalValueINR.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ₹{totalCurrentValueINR.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '14px', fontWeight: '600', color: dailyPL >= 0 ? '#22c55e' : '#ef4444' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#94a3b8' }}>
+          Today's P&L: 
+          <span style={{ fontWeight: '700', color: dailyPL >= 0 ? '#22c55e' : '#ef4444' }}>
             {dailyPL >= 0 ? '▲' : '▼'} ₹{Math.abs(dailyPL).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
-          <span className="mono" style={{ fontSize: '13px', fontWeight: '600', padding: '2px 8px', borderRadius: '6px', background: dailyPL >= 0 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: dailyPL >= 0 ? '#22c55e' : '#ef4444' }}>
+          <span style={{ background: dailyPL >= 0 ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', padding: '2px 6px', borderRadius: '4px', color: dailyPL >= 0 ? '#22c55e' : '#ef4444' }}>
             {dailyPL >= 0 ? '+' : ''}{dailyPLPercent.toFixed(2)}%
           </span>
         </div>
       </div>
 
+      {/* 2. OVERALL INVESTED & OVERALL P&L */}
+      <div style={{ ...cardStyle, borderTop: '3px solid #0ea5e9' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+          <span style={{ fontSize: '20px' }}>📈</span>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Invested & Net P&L</span>
+        </div>
+        <div className="mono" style={{ fontSize: '24px', fontWeight: '700', color: '#e2e8f0', marginBottom: '8px' }}>
+          ₹{totalInvestedINR.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '14px', fontWeight: '700', color: overallPL >= 0 ? '#22c55e' : '#ef4444' }}>
+            {overallPL >= 0 ? '▲' : '▼'} ₹{Math.abs(overallPL).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+          <span className="mono" style={{ fontSize: '13px', fontWeight: '700', padding: '2px 8px', borderRadius: '6px', background: overallPL >= 0 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: overallPL >= 0 ? '#22c55e' : '#ef4444' }}>
+            {overallPL >= 0 ? '+' : ''}{overallPLPercent.toFixed(2)}%
+          </span>
+        </div>
+      </div>
+
+      {/* 3. AI SENTIMENT */}
       <div style={{ ...cardStyle, borderTop: '3px solid #22c55e' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           <span style={{ fontSize: '20px' }}>🧠</span>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Sentiment</span>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Confidence</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '12px' }}>
           <span className="mono" style={{ fontSize: '28px', fontWeight: '700', color: avgSentiment >= 70 ? '#22c55e' : avgSentiment >= 50 ? '#eab308' : '#ef4444' }}>
@@ -69,21 +89,7 @@ export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
         </div>
       </div>
 
-      <div style={{ ...cardStyle, borderTop: '3px solid #06b6d4' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <span style={{ fontSize: '20px' }}>📊</span>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Signals</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-          {[{ label: 'BUY', count: buyCount, color: '#22c55e', bg: 'rgba(34, 197, 94, 0.15)' }, { label: 'HOLD', count: holdCount, color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)' }, { label: 'SELL', count: sellCount, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' }].map(item => (
-            <div key={item.label} style={{ flex: 1, textAlign: 'center', padding: '12px 8px', background: item.bg, borderRadius: '10px', border: `1px solid ${item.color}33` }}>
-              <div className="mono" style={{ fontSize: '24px', fontWeight: '700', color: item.color, lineHeight: 1 }}>{item.count}</div>
-              <div style={{ fontSize: '10px', fontWeight: '700', color: item.color, marginTop: '4px', letterSpacing: '0.05em' }}>{item.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
+      {/* 4. MARKETS */}
       <div style={{ ...cardStyle, borderTop: '3px solid #f59e0b' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
           <span style={{ fontSize: '20px' }}>🌍</span>
@@ -101,6 +107,7 @@ export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
           ))}
         </div>
       </div>
+
     </div>
   );
 }

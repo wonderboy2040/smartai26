@@ -17,6 +17,7 @@ export interface ETF {
   support: number;
   resistance: number;
   holdings: number;
+  avgBuyPrice: number; // NEW: Average Buy Price for P&L calculation
 }
 
 export interface NewsItem {

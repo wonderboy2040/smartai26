@@ -11,29 +11,23 @@ import { useETFData } from './hooks/useETFData';
 
 export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { etfs, selectedETF, selectETF, getFlash, usdInrRate, updateHoldings, addAsset, deleteAsset } = useETFData();
+  const { etfs, selectedETF, selectETF, getFlash, usdInrRate, updateAssetDetails, addAsset, deleteAsset, forceSave } = useETFData();
 
   const filteredETFs = useMemo(() => {
     if (!searchQuery.trim()) return etfs;
     const query = searchQuery.toLowerCase();
     return etfs.filter(
-      etf =>
-        etf.symbol.toLowerCase().includes(query) ||
-        etf.name.toLowerCase().includes(query)
+      etf => etf.symbol.toLowerCase().includes(query) || etf.name.toLowerCase().includes(query)
     );
   }, [etfs, searchQuery]);
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #0f0f1a 100%)',
-    }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #0f0f1a 100%)' }}>
       <Header searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
       <main style={{ maxWidth: '1600px', margin: '0 auto', padding: '24px' }}>
         <StatCards etfs={etfs} usdInrRate={usdInrRate} />
 
-        {/* Sirf tab dikhayein jab koi asset select ho */}
         {selectedETF && (
           <div className="chart-ai-grid" style={{ marginBottom: '24px' }}>
             <TradingChart selectedETF={selectedETF} />
@@ -47,9 +41,10 @@ export default function App() {
             selectedETF={selectedETF}
             onSelectETF={selectETF}
             getFlash={getFlash}
-            updateHoldings={updateHoldings}
+            updateAssetDetails={updateAssetDetails}
             addAsset={addAsset}
             deleteAsset={deleteAsset}
+            forceSave={forceSave}
           />
         </div>
 
@@ -69,18 +64,14 @@ export default function App() {
               <div style={{ fontSize: '11px', color: '#64748b' }}>Advanced AI-Powered Trading Dashboard</div>
             </div>
           </div>
-
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="animate-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 10px #22c55e' }} />
               <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: '600' }}>Live API / Smart Fallback Active</span>
             </div>
-            
             <div style={{ display: 'flex', gap: '12px' }}>
               {['☁️ Cloud Sync', '🔒 Secure', '⚡ Real-time'].map(badge => (
-                <span key={badge} style={{ fontSize: '11px', color: '#94a3b8', padding: '6px 12px', background: 'rgba(100, 100, 150, 0.15)', borderRadius: '6px', border: '1px solid rgba(100, 100, 150, 0.2)' }}>
-                  {badge}
-                </span>
+                <span key={badge} style={{ fontSize: '11px', color: '#94a3b8', padding: '6px 12px', background: 'rgba(100, 100, 150, 0.15)', borderRadius: '6px', border: '1px solid rgba(100, 100, 150, 0.2)' }}>{badge}</span>
               ))}
             </div>
           </div>

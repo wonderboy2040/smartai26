@@ -16,8 +16,8 @@ export interface ETF {
   trend: string;
   support: number;
   resistance: number;
-  holdings: number;
-  avgBuyPrice: number; // NEW: Average Buy Price for P&L calculation
+  holdings: number | string; // Fix: Allow string for smooth decimal typing
+  avgBuyPrice: number | string; // Fix: Allow string for smooth decimal typing
 }
 
 export interface NewsItem {

@@ -28,10 +28,16 @@ export default function App() {
       <main style={{ maxWidth: '1600px', margin: '0 auto', padding: '24px' }}>
         <StatCards etfs={etfs} usdInrRate={usdInrRate} />
 
-        {selectedETF && (
+        {/* Fix: Prevent crash if portfolio is totally empty */}
+        {selectedETF ? (
           <div className="chart-ai-grid" style={{ marginBottom: '24px' }}>
             <TradingChart selectedETF={selectedETF} />
             <AIAnalysis selectedETF={selectedETF} />
+          </div>
+        ) : (
+          <div style={{ background: 'rgba(20, 20, 35, 0.8)', borderRadius: '16px', border: '1px dashed rgba(139, 92, 246, 0.4)', padding: '40px', textAlign: 'center', marginBottom: '24px', color: '#94a3b8' }}>
+            <span style={{ fontSize: '30px', display: 'block', marginBottom: '10px' }}>📉</span>
+            Your portfolio is empty. Add an asset below to unlock AI Analysis and Charts.
           </div>
         )}
 

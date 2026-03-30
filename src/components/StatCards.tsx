@@ -6,14 +6,14 @@ interface StatCardsProps {
 }
 
 export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
-  // Advanced Math for Portfolio Tracking
+  // Fix: Explicitly convert to Number to avoid NaN if string is empty
   const totalInvestedINR = etfs.reduce((sum, etf) => {
-    const val = (etf.avgBuyPrice || 0) * (etf.holdings || 0);
+    const val = (Number(etf.avgBuyPrice) || 0) * (Number(etf.holdings) || 0);
     return sum + (etf.market === 'US' ? val * usdInrRate : val);
   }, 0);
 
   const totalCurrentValueINR = etfs.reduce((sum, etf) => {
-    const val = etf.price * (etf.holdings || 0);
+    const val = etf.price * (Number(etf.holdings) || 0);
     return sum + (etf.market === 'US' ? val * usdInrRate : val);
   }, 0);
 
@@ -21,7 +21,7 @@ export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
   const overallPLPercent = totalInvestedINR > 0 ? (overallPL / totalInvestedINR) * 100 : 0;
   
   const dailyPL = etfs.reduce((sum, etf) => {
-    const pl = etf.change * (etf.holdings || 0);
+    const pl = etf.change * (Number(etf.holdings) || 0);
     return sum + (etf.market === 'US' ? pl * usdInrRate : pl);
   }, 0);
   const dailyPLPercent = totalCurrentValueINR > 0 ? ((dailyPL / (totalCurrentValueINR - dailyPL)) * 100) : 0;
@@ -32,8 +32,6 @@ export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
 
   return (
     <div className="stats-grid" style={{ marginBottom: '24px' }}>
-      
-      {/* 1. CURRENT VALUE & DAILY P&L */}
       <div style={{ ...cardStyle, borderTop: '3px solid #8b5cf6' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           <span style={{ fontSize: '20px' }}>💰</span>
@@ -53,7 +51,6 @@ export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
         </div>
       </div>
 
-      {/* 2. OVERALL INVESTED & OVERALL P&L */}
       <div style={{ ...cardStyle, borderTop: '3px solid #0ea5e9' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           <span style={{ fontSize: '20px' }}>📈</span>
@@ -72,7 +69,6 @@ export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
         </div>
       </div>
 
-      {/* 3. AI SENTIMENT */}
       <div style={{ ...cardStyle, borderTop: '3px solid #22c55e' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           <span style={{ fontSize: '20px' }}>🧠</span>
@@ -89,7 +85,6 @@ export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
         </div>
       </div>
 
-      {/* 4. MARKETS */}
       <div style={{ ...cardStyle, borderTop: '3px solid #f59e0b' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
           <span style={{ fontSize: '20px' }}>🌍</span>
@@ -107,7 +102,6 @@ export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
           ))}
         </div>
       </div>
-
     </div>
   );
 }

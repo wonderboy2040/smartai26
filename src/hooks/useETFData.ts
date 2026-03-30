@@ -8,11 +8,10 @@ export function useETFData() {
       const saved = localStorage.getItem('smartai_portfolio_sync');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Merge saved holdings and avg prices with initial structure
         return parsed.map((savedEtf: ETF) => ({
           ...savedEtf,
-          holdings: savedEtf.holdings || 0,
-          avgBuyPrice: savedEtf.avgBuyPrice || 0
+          holdings: savedEtf.holdings ?? 0,
+          avgBuyPrice: savedEtf.avgBuyPrice ?? 0
         }));
       }
     } catch (e) {
@@ -21,24 +20,20 @@ export function useETFData() {
     return initialETFs;
   });
 
-  const [selectedETF, setSelectedETF] = useState<ETF>(etfs[0] || initialETFs[0]);
+  const [selectedETF, setSelectedETF] = useState<ETF | null>(etfs[0] || null);
   const [usdInrRate, setUsdInrRate] = useState<number>(83.50);
   const flashMap = useRef<Map<string, 'up' | 'down'>>(new Map());
 
-  // Auto-Sync
   useEffect(() => {
     localStorage.setItem('smartai_portfolio_sync', JSON.stringify(etfs));
   }, [etfs]);
 
-  // Live Exchange Rate
   useEffect(() => {
     const fetchExchangeRate = async () => {
       try {
         const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
         const data = await response.json();
-        if (data && data.rates && data.rates.INR) {
-          setUsdInrRate(data.rates.INR);
-        }
+        if (data?.rates?.INR) setUsdInrRate(data.rates.INR);
       } catch (error) {
         console.error("Live USD/INR Fetch Error:", error);
       }
@@ -48,7 +43,6 @@ export function useETFData() {
     return () => clearInterval(interval);
   }, []);
 
-  // Advanced Price Fetching Mechanism (Real API with Smart Fallback)
   useEffect(() => {
     const fetchLivePrices = async () => {
       if (etfs.length === 0) return;
@@ -56,7 +50,8 @@ export function useETFData() {
       const updatedEtfs = await Promise.all(etfs.map(async (etf) => {
         try {
           const yfSymbol = etf.market === 'IN' ? `${etf.symbol}.NS` : etf.symbol;
-          const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${yfSymbol}?interval=1m`)}`;
+          // Bypass cache with timestamp
+          const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${yfSymbol}?interval=1m&_t=${Date.now()}`)}`;
           
           const response = await fetch(url);
           if (!response.ok) throw new Error('API Rate Limit or Network Error');
@@ -71,9 +66,8 @@ export function useETFData() {
           if (currentPrice > etf.price) flashMap.current.set(etf.id, 'up');
           else if (currentPrice < etf.price) flashMap.current.set(etf.id, 'down');
 
-          return { ...etf, price: currentPrice, prevPrice: etf.price, change: change, changePercent: changePercent };
+          return { ...etf, price: currentPrice, prevPrice: etf.price, change, changePercent };
         } catch (error) {
-          // Smart Fallback Simulator
           const volatility = etf.market === 'US' ? 0.05 : 0.2; 
           const priceChange = (Math.random() - 0.48) * volatility;
           const newPrice = +(etf.price + priceChange).toFixed(2);
@@ -93,23 +87,26 @@ export function useETFData() {
     return () => clearInterval(interval);
   }, [etfs]); 
 
+  // Fix: Safe selection handling
   useEffect(() => {
     if (etfs.length > 0) {
-      const updated = etfs.find(e => e.id === selectedETF?.id);
-      if (updated) setSelectedETF(updated);
-      else setSelectedETF(etfs[0]);
+      if (!selectedETF || !etfs.find(e => e.id === selectedETF.id)) {
+        setSelectedETF(etfs[0]);
+      } else {
+        setSelectedETF(etfs.find(e => e.id === selectedETF.id) || etfs[0]);
+      }
+    } else {
+      setSelectedETF(null);
     }
   }, [etfs, selectedETF?.id]);
 
   const selectETF = useCallback((etf: ETF) => setSelectedETF(etf), []);
   const getFlash = useCallback((id: string) => flashMap.current.get(id), []);
   
-  // NEW: Update Qty AND Avg Price together
   const updateAssetDetails = useCallback((id: string, qty: string, avgPrice: string) => {
+    // Keep as string in state to avoid typing issues with decimals
     setEtfs(prev => prev.map(etf => etf.id === id ? { 
-      ...etf, 
-      holdings: Number(qty) || 0,
-      avgBuyPrice: Number(avgPrice) || 0 
+      ...etf, holdings: qty, avgBuyPrice: avgPrice 
     } : etf));
   }, []);
 
@@ -121,7 +118,6 @@ export function useETFData() {
     setEtfs(prev => prev.filter(etf => etf.id !== id));
   }, []);
 
-  // Force manual save (for UI feedback)
   const forceSave = useCallback(() => {
     localStorage.setItem('smartai_portfolio_sync', JSON.stringify(etfs));
   }, [etfs]);

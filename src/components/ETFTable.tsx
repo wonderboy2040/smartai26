@@ -3,7 +3,7 @@ import { ETF } from '../types';
 
 interface ETFTableProps {
   etfs: ETF[];
-  selectedETF: ETF;
+  selectedETF: ETF | null; // Allow null
   onSelectETF: (etf: ETF) => void;
   getFlash: (id: string) => 'up' | 'down' | undefined;
   updateAssetDetails: (id: string, qty: string, avgPrice: string) => void;
@@ -19,7 +19,6 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
   const [showModal, setShowModal] = useState(false);
   const [saveIndicator, setSaveIndicator] = useState(false);
   
-  // Modal State
   const [newSymbol, setNewSymbol] = useState('');
   const [newName, setNewName] = useState('');
   const [newMarket, setNewMarket] = useState<'US' | 'IN'>('IN');
@@ -28,9 +27,7 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
 
   const filteredETFs = etfs.filter(etf => filter === 'ALL' || etf.market === filter);
 
-  const formatPrice = (price: number, market: string) => {
-    return market === 'US' ? `$${price.toFixed(2)}` : `₹${price.toFixed(2)}`;
-  };
+  const formatPrice = (price: number, market: string) => market === 'US' ? `$${price.toFixed(2)}` : `₹${price.toFixed(2)}`;
 
   const handleSaveClick = () => {
     forceSave();
@@ -42,13 +39,15 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
     e.preventDefault();
     if (!newSymbol || !newName) return;
 
+    const initialPrice = Number(newAvgPrice) || 100;
+
     const newAsset: ETF = {
       id: Date.now().toString(),
       symbol: newSymbol.toUpperCase(),
       name: newName,
       market: newMarket,
-      price: Number(newAvgPrice) || 100, // Temp initial price
-      prevPrice: Number(newAvgPrice) || 100,
+      price: initialPrice,
+      prevPrice: initialPrice,
       change: 0,
       changePercent: 0,
       volume: '0M',
@@ -58,10 +57,10 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
       rsi: 50,
       macd: 'Neutral',
       trend: 'Sideways',
-      support: (Number(newAvgPrice) || 100) * 0.9,
-      resistance: (Number(newAvgPrice) || 100) * 1.1,
-      holdings: Number(newQty) || 0,
-      avgBuyPrice: Number(newAvgPrice) || 0
+      support: initialPrice * 0.9,
+      resistance: initialPrice * 1.1,
+      holdings: newQty,
+      avgBuyPrice: newAvgPrice
     };
 
     addAsset(newAsset);
@@ -107,15 +106,17 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
               {filteredETFs.map(etf => {
                 const isSelected = selectedETF?.id === etf.id;
                 const flash = getFlash(etf.id);
-                const invested = etf.avgBuyPrice * etf.holdings;
-                const currentVal = etf.price * etf.holdings;
+                
+                const safeHoldings = Number(etf.holdings) || 0;
+                const safeAvgBuyPrice = Number(etf.avgBuyPrice) || 0;
+                
+                const invested = safeAvgBuyPrice * safeHoldings;
+                const currentVal = etf.price * safeHoldings;
                 const pnl = currentVal - invested;
                 const pnlPercent = invested > 0 ? (pnl / invested) * 100 : 0;
 
                 return (
                   <tr key={etf.id} onClick={() => onSelectETF(etf)} className={flash === 'up' ? 'flash-green' : flash === 'down' ? 'flash-red' : ''} style={{ borderBottom: '1px solid rgba(100, 100, 150, 0.1)', cursor: 'pointer', background: isSelected ? 'rgba(139, 92, 246, 0.1)' : 'transparent' }}>
-                    
-                    {/* ASSET */}
                     <td style={{ padding: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: etf.market === 'US' ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))' : 'linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(249, 115, 22, 0.2))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
@@ -127,36 +128,24 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
                         </div>
                       </div>
                     </td>
-
-                    {/* CMP */}
                     <td style={{ padding: '16px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         <span className="mono" style={{ fontSize: '13px', fontWeight: '600', color: '#fff' }}>{formatPrice(etf.price, etf.market)}</span>
                         <span style={{ fontSize: '11px', fontWeight: '600', color: etf.change >= 0 ? '#22c55e' : '#ef4444' }}>{etf.change >= 0 ? '▲' : '▼'} {Math.abs(etf.changePercent).toFixed(2)}%</span>
                       </div>
                     </td>
-
-                    {/* QTY INPUT */}
                     <td style={{ padding: '16px' }}>
-                      <input type="number" step="any" value={etf.holdings || ''} onChange={(e) => updateAssetDetails(etf.id, e.target.value, etf.avgBuyPrice.toString())} onClick={(e) => e.stopPropagation()} placeholder="0" className="mono" style={{ width: '70px', padding: '6px 8px', background: 'rgba(30, 30, 50, 0.8)', border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: '6px', color: '#fff', fontSize: '12px', outline: 'none' }} />
+                      <input type="number" step="any" value={etf.holdings} onChange={(e) => updateAssetDetails(etf.id, e.target.value, String(etf.avgBuyPrice))} onClick={(e) => e.stopPropagation()} placeholder="0" className="mono" style={{ width: '70px', padding: '6px 8px', background: 'rgba(30, 30, 50, 0.8)', border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: '6px', color: '#fff', fontSize: '12px', outline: 'none' }} />
                     </td>
-
-                    {/* AVG PRICE INPUT */}
                     <td style={{ padding: '16px' }}>
-                      <input type="number" step="any" value={etf.avgBuyPrice || ''} onChange={(e) => updateAssetDetails(etf.id, etf.holdings.toString(), e.target.value)} onClick={(e) => e.stopPropagation()} placeholder="0.00" className="mono" style={{ width: '80px', padding: '6px 8px', background: 'rgba(30, 30, 50, 0.8)', border: '1px solid #06b6d444', borderRadius: '6px', color: '#fff', fontSize: '12px', outline: 'none' }} />
+                      <input type="number" step="any" value={etf.avgBuyPrice} onChange={(e) => updateAssetDetails(etf.id, String(etf.holdings), e.target.value)} onClick={(e) => e.stopPropagation()} placeholder="0.00" className="mono" style={{ width: '80px', padding: '6px 8px', background: 'rgba(30, 30, 50, 0.8)', border: '1px solid #06b6d444', borderRadius: '6px', color: '#fff', fontSize: '12px', outline: 'none' }} />
                     </td>
-
-                    {/* INVESTED */}
                     <td style={{ padding: '16px' }}>
                       <span className="mono" style={{ fontSize: '13px', color: '#94a3b8' }}>{formatPrice(invested, etf.market)}</span>
                     </td>
-
-                    {/* CURRENT VAL */}
                     <td style={{ padding: '16px' }}>
                       <span className="mono" style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600' }}>{formatPrice(currentVal, etf.market)}</span>
                     </td>
-
-                    {/* OVERALL P&L */}
                     <td style={{ padding: '16px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: pnl >= 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', padding: '6px 10px', borderRadius: '8px', border: `1px solid ${pnl >= 0 ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}` }}>
                         <span className="mono" style={{ fontSize: '13px', fontWeight: '700', color: pnl >= 0 ? '#22c55e' : '#ef4444' }}>
@@ -167,14 +156,10 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
                         </span>
                       </div>
                     </td>
-
-                    {/* ACTION */}
                     <td style={{ padding: '16px' }}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={(e) => { e.stopPropagation(); deleteAsset(etf.id); }} style={{ padding: '6px 10px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', cursor: 'pointer', fontSize: '14px' }} title="Delete">
-                          🗑️
-                        </button>
-                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); deleteAsset(etf.id); }} style={{ padding: '6px 10px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', cursor: 'pointer', fontSize: '14px' }} title="Delete">
+                        🗑️
+                      </button>
                     </td>
                   </tr>
                 );
@@ -187,7 +172,6 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
         </div>
       </div>
 
-      {/* Modal UI same but with inputs for Qty & Avg Price */}
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: '#1e1e2e', padding: '24px', borderRadius: '16px', width: '400px', border: '1px solid rgba(139, 92, 246, 0.5)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>

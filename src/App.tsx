@@ -2,23 +2,20 @@ import { useState, useMemo } from 'react';
 import { Header } from './components/Header';
 import { StatCards } from './components/StatCards';
 import { TradingChart } from './components/TradingChart';
-import { QuantumForensics } from './components/QuantumForensics'; // Naya import
+import { QuantumForensics } from './components/QuantumForensics';
+import { AIPlanner } from './components/AIPlanner';
 import { ETFTable } from './components/ETFTable';
 import { AIInsights } from './components/AIInsights';
 import { NewsFeed } from './components/NewsFeed';
-import { AIPerformance } from './components/AIPerformance';
 import { useETFData } from './hooks/useETFData';
 
 export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { etfs, selectedETF, selectETF, getFlash, usdInrRate, updateAssetDetails, addAsset, deleteAsset, forceSave } = useETFData();
+  const { etfs, selectedETF, selectETF, getFlash, usdInrRate, updateAssetDetails, addAsset, deleteAsset, forceSave, isSyncing } = useETFData();
 
   const filteredETFs = useMemo(() => {
     if (!searchQuery.trim()) return etfs;
-    const query = searchQuery.toLowerCase();
-    return etfs.filter(
-      etf => etf.symbol.toLowerCase().includes(query) || etf.name.toLowerCase().includes(query)
-    );
+    return etfs.filter(etf => etf.symbol.toLowerCase().includes(searchQuery.toLowerCase()) || etf.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [etfs, searchQuery]);
 
   return (
@@ -28,20 +25,19 @@ export default function App() {
       <main style={{ maxWidth: '1600px', margin: '0 auto', padding: '24px' }}>
         <StatCards etfs={etfs} usdInrRate={usdInrRate} />
 
-        {/* Naya Pro Grid Layout: Live Chart + Quantum Forensics */}
-        {selectedETF ? (
-          <div className="chart-forensics-grid" style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: '7fr 3fr', gap: '24px' }}>
+        {/* Top Analytics Grid: Chart | Forensics | AI Planner */}
+        {selectedETF && (
+          <div className="top-pro-grid" style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: '5.5fr 2.5fr 2.5fr', gap: '24px' }}>
             <TradingChart selectedETF={selectedETF} />
             <QuantumForensics selectedETF={selectedETF} />
-          </div>
-        ) : (
-          <div style={{ background: 'rgba(20, 20, 35, 0.8)', borderRadius: '16px', border: '1px dashed rgba(139, 92, 246, 0.4)', padding: '40px', textAlign: 'center', marginBottom: '24px', color: '#94a3b8' }}>
-            <span style={{ fontSize: '30px', display: 'block', marginBottom: '10px' }}>📉</span>
-            Your portfolio is empty. Add an asset below to unlock AI Analysis and Charts.
+            <AIPlanner etfs={etfs} usdInrRate={usdInrRate} />
           </div>
         )}
 
         <div style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+            {isSyncing && <span style={{ color: '#06b6d4', fontSize: '12px', fontWeight: 'bold' }}>☁️ Syncing to Cloud...</span>}
+          </div>
           <ETFTable
             etfs={filteredETFs}
             selectedETF={selectedETF}
@@ -54,19 +50,22 @@ export default function App() {
           />
         </div>
 
-        <div className="bottom-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+        <div className="bottom-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
           <AIInsights />
           <NewsFeed />
-          <AIPerformance />
         </div>
       </main>
 
-      {/* Footer same rahega... */}
-      
       <style>{`
-        @media (max-width: 1400px) { .chart-forensics-grid { grid-template-columns: 6fr 4fr !important; } }
-        @media (max-width: 1100px) { .chart-forensics-grid { grid-template-columns: 1fr !important; } .bottom-grid { grid-template-columns: 1fr 1fr !important; } }
-        @media (max-width: 900px) { .bottom-grid { grid-template-columns: 1fr !important; } }
+        @media (max-width: 1400px) { .top-pro-grid { grid-template-columns: 5fr 3fr 3fr !important; } }
+        @media (max-width: 1200px) { 
+          .top-pro-grid { grid-template-columns: 1fr 1fr !important; } 
+          .top-pro-grid > div:first-child { grid-column: 1 / -1; }
+        }
+        @media (max-width: 900px) { 
+          .top-pro-grid { grid-template-columns: 1fr !important; } 
+          .bottom-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
     </div>
   );

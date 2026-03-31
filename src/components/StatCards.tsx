@@ -6,7 +6,7 @@ interface StatCardsProps {
 }
 
 export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
-  // Fix: Explicitly convert to Number to avoid NaN if string is empty
+  // P&L Calculations (Bug-Free Float Math)
   const totalInvestedINR = etfs.reduce((sum, etf) => {
     const val = (Number(etf.avgBuyPrice) || 0) * (Number(etf.holdings) || 0);
     return sum + (etf.market === 'US' ? val * usdInrRate : val);
@@ -28,80 +28,108 @@ export function StatCards({ etfs, usdInrRate }: StatCardsProps) {
   
   const avgSentiment = etfs.length > 0 ? etfs.reduce((sum, e) => sum + e.confidence, 0) / etfs.length : 50;
 
-  const cardStyle: React.CSSProperties = { background: 'rgba(20, 20, 35, 0.8)', backdropFilter: 'blur(10px)', borderRadius: '16px', border: '1px solid rgba(100, 100, 150, 0.2)', padding: '20px 24px', transition: 'all 0.3s ease' };
+  // Pro-Level Card Styling
+  const cardStyle: React.CSSProperties = { 
+    background: '#131722', 
+    borderRadius: '12px', 
+    border: '1px solid #2A2E39', 
+    padding: '20px', 
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+  };
 
   return (
-    <div className="stats-grid" style={{ marginBottom: '24px' }}>
-      <div style={{ ...cardStyle, borderTop: '3px solid #8b5cf6' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-          <span style={{ fontSize: '20px' }}>💰</span>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Value (INR)</span>
+    <div className="stats-grid" style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+      
+      {/* 1. CURRENT VALUE */}
+      <div style={{ ...cardStyle, borderTop: '3px solid #2962FF' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: '#787B86', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Value (INR)</span>
+          <span style={{ fontSize: '16px' }}>💰</span>
         </div>
-        <div className="mono" style={{ fontSize: '28px', fontWeight: '700', color: '#fff', marginBottom: '8px' }}>
+        <div className="mono" style={{ fontSize: '28px', fontWeight: '700', color: '#D1D4DC', marginBottom: '12px' }}>
           ₹{totalCurrentValueINR.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#94a3b8' }}>
-          Today's P&L: 
-          <span style={{ fontWeight: '700', color: dailyPL >= 0 ? '#22c55e' : '#ef4444' }}>
-            {dailyPL >= 0 ? '▲' : '▼'} ₹{Math.abs(dailyPL).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-          <span style={{ background: dailyPL >= 0 ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', padding: '2px 6px', borderRadius: '4px', color: dailyPL >= 0 ? '#22c55e' : '#ef4444' }}>
-            {dailyPL >= 0 ? '+' : ''}{dailyPLPercent.toFixed(2)}%
-          </span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0B0E14', padding: '10px 14px', borderRadius: '8px', border: '1px solid #1E222D' }}>
+          <span style={{ fontSize: '11px', color: '#787B86', fontWeight: '600', textTransform: 'uppercase' }}>Today's P&L</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="mono" style={{ fontSize: '14px', fontWeight: '700', color: dailyPL >= 0 ? '#089981' : '#F23645' }}>
+              {dailyPL >= 0 ? '+' : ''}₹{Math.abs(dailyPL).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: dailyPL >= 0 ? '#089981' : '#F23645', background: dailyPL >= 0 ? 'rgba(8, 153, 129, 0.1)' : 'rgba(242, 54, 69, 0.1)', padding: '3px 6px', borderRadius: '4px' }}>
+              {dailyPL >= 0 ? '▲' : '▼'} {Math.abs(dailyPLPercent).toFixed(2)}%
+            </span>
+          </div>
         </div>
       </div>
 
-      <div style={{ ...cardStyle, borderTop: '3px solid #0ea5e9' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-          <span style={{ fontSize: '20px' }}>📈</span>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Invested & Net P&L</span>
+      {/* 2. OVERALL INVESTED & P&L */}
+      <div style={{ ...cardStyle, borderTop: '3px solid #F59E0B' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: '#787B86', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Invested & Net P&L</span>
+          <span style={{ fontSize: '16px' }}>📈</span>
         </div>
-        <div className="mono" style={{ fontSize: '24px', fontWeight: '700', color: '#e2e8f0', marginBottom: '8px' }}>
+        <div className="mono" style={{ fontSize: '24px', fontWeight: '700', color: '#A3A6AF', marginBottom: '12px' }}>
           ₹{totalInvestedINR.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '14px', fontWeight: '700', color: overallPL >= 0 ? '#22c55e' : '#ef4444' }}>
-            {overallPL >= 0 ? '▲' : '▼'} ₹{Math.abs(overallPL).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-          <span className="mono" style={{ fontSize: '13px', fontWeight: '700', padding: '2px 8px', borderRadius: '6px', background: overallPL >= 0 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: overallPL >= 0 ? '#22c55e' : '#ef4444' }}>
-            {overallPL >= 0 ? '+' : ''}{overallPLPercent.toFixed(2)}%
-          </span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0B0E14', padding: '10px 14px', borderRadius: '8px', border: '1px solid #1E222D' }}>
+          <span style={{ fontSize: '11px', color: '#787B86', fontWeight: '600', textTransform: 'uppercase' }}>Net Return</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="mono" style={{ fontSize: '14px', fontWeight: '700', color: overallPL >= 0 ? '#089981' : '#F23645' }}>
+              {overallPL >= 0 ? '+' : ''}₹{Math.abs(overallPL).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: overallPL >= 0 ? '#089981' : '#F23645', background: overallPL >= 0 ? 'rgba(8, 153, 129, 0.1)' : 'rgba(242, 54, 69, 0.1)', padding: '3px 6px', borderRadius: '4px' }}>
+              {overallPL >= 0 ? '▲' : '▼'} {Math.abs(overallPLPercent).toFixed(2)}%
+            </span>
+          </div>
         </div>
       </div>
 
-      <div style={{ ...cardStyle, borderTop: '3px solid #22c55e' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-          <span style={{ fontSize: '20px' }}>🧠</span>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Confidence</span>
+      {/* 3. AI CONFIDENCE */}
+      <div style={{ ...cardStyle, borderTop: '3px solid #089981' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: '#787B86', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Deep AI Confidence</span>
+          <span style={{ fontSize: '16px' }}>🧠</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '12px' }}>
-          <span className="mono" style={{ fontSize: '28px', fontWeight: '700', color: avgSentiment >= 70 ? '#22c55e' : avgSentiment >= 50 ? '#eab308' : '#ef4444' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '16px' }}>
+          <span className="mono" style={{ fontSize: '32px', fontWeight: '700', color: avgSentiment >= 70 ? '#089981' : avgSentiment >= 50 ? '#EAB308' : '#F23645' }}>
             {avgSentiment.toFixed(0)}%
           </span>
-          <span style={{ fontSize: '14px', fontWeight: '600', color: '#22c55e' }}>Bullish</span>
+          <span style={{ fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', color: avgSentiment >= 70 ? '#089981' : avgSentiment >= 50 ? '#EAB308' : '#F23645' }}>
+            {avgSentiment >= 70 ? 'Bullish Trend' : avgSentiment >= 50 ? 'Neutral Zone' : 'Bearish Trend'}
+          </span>
         </div>
-        <div style={{ height: '6px', background: 'rgba(100, 100, 150, 0.3)', borderRadius: '10px', overflow: 'hidden' }}>
-          <div style={{ width: `${avgSentiment}%`, height: '100%', background: 'linear-gradient(90deg, #22c55e, #4ade80)', borderRadius: '10px', transition: 'width 0.5s ease' }} />
+        <div style={{ height: '8px', background: '#0B0E14', borderRadius: '4px', overflow: 'hidden', border: '1px solid #2A2E39' }}>
+          <div style={{ width: `${avgSentiment}%`, height: '100%', background: avgSentiment >= 70 ? '#089981' : avgSentiment >= 50 ? '#EAB308' : '#F23645', borderRadius: '4px', transition: 'width 0.8s ease' }} />
         </div>
       </div>
 
-      <div style={{ ...cardStyle, borderTop: '3px solid #f59e0b' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <span style={{ fontSize: '20px' }}>🌍</span>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Markets</span>
+      {/* 4. MARKETS STATUS */}
+      <div style={{ ...cardStyle, borderTop: '3px solid #8B5CF6' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: '#787B86', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Global Markets</span>
+          <span style={{ fontSize: '16px' }}>🌍</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {[{ flag: '🇺🇸', name: 'NYSE/NASDAQ', status: 'Open', isOpen: true }, { flag: '🇮🇳', name: 'NSE/BSE', status: 'Closed', isOpen: false }].map(market => (
-            <div key={market.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(30, 30, 50, 0.5)', borderRadius: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {[{ flag: '🇺🇸', name: 'US (NASDAQ/NYSE)', isOpen: true }, { flag: '🇮🇳', name: 'INDIA (NSE/BSE)', isOpen: false }].map(market => (
+            <div key={market.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0B0E14', padding: '10px 14px', borderRadius: '8px', border: '1px solid #1E222D' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '18px' }}>{market.flag}</span>
-                <span style={{ fontSize: '12px', fontWeight: '500', color: '#cbd5e1' }}>{market.name}</span>
+                <span style={{ fontSize: '16px' }}>{market.flag}</span>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#D1D4DC' }}>{market.name}</span>
               </div>
-              <span style={{ fontSize: '10px', fontWeight: '700', padding: '4px 10px', borderRadius: '6px', background: market.isOpen ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: market.isOpen ? '#22c55e' : '#ef4444', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{market.status}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className={market.isOpen ? 'animate-pulse' : ''} style={{ width: '8px', height: '8px', borderRadius: '50%', background: market.isOpen ? '#089981' : '#F23645', boxShadow: market.isOpen ? '0 0 8px #089981' : 'none' }}></span>
+                <span style={{ fontSize: '11px', fontWeight: '700', color: market.isOpen ? '#089981' : '#F23645', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {market.isOpen ? 'Active' : 'Closed'}
+                </span>
+              </div>
             </div>
           ))}
         </div>
       </div>
+
     </div>
   );
 }

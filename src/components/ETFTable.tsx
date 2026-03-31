@@ -10,9 +10,10 @@ interface ETFTableProps {
   addAsset: (asset: ETF) => void;
   deleteAsset: (id: string) => void;
   syncStatus: string;
+  forceSave: () => void; // New prop for manual trigger
 }
 
-export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAssetDetails, addAsset, deleteAsset, syncStatus }: ETFTableProps) {
+export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAssetDetails, addAsset, deleteAsset, syncStatus, forceSave }: ETFTableProps) {
   const [showModal, setShowModal] = useState(false);
   const [newSymbol, setNewSymbol] = useState('');
   const [newName, setNewName] = useState('');
@@ -27,7 +28,7 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
       id: Date.now().toString(), symbol: newSymbol.toUpperCase(), name: newName, market: newMarket,
       price: 100, prevPrice: 100, change: 0, changePercent: 0, volume: '0', marketCap: '-',
       signal: 'HOLD', confidence: 50, rsi: 50, macd: 'Neutral', trend: 'Sideways',
-      support: 90, resistance: 110, holdings: 0, avgBuyPrice: 0
+      support: 90, resistance: 110, holdings: '', avgBuyPrice: '' // Default blank for smooth typing
     });
     setShowModal(false); setNewSymbol(''); setNewName('');
   };
@@ -35,7 +36,8 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
   return (
     <>
       <div style={{ background: '#131722', borderRadius: '12px', border: '1px solid #2A2E39', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
-        {/* Header Area */}
+        
+        {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #2A2E39', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#D1D4DC', margin: 0, textTransform: 'uppercase' }}>Assets Core</h3>
@@ -47,7 +49,7 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
           <button onClick={() => setShowModal(true)} style={{ padding: '6px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '700', background: '#2962FF', color: '#fff', border: 'none', cursor: 'pointer' }}>+ ADD ASSET</button>
         </div>
 
-        {/* Data Grid */}
+        {/* Pro Data Grid */}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -84,12 +86,32 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
                       </div>
                     </td>
 
-                    {/* Pro Invisible Inputs */}
+                    {/* LAG & BUG FREE INPUTS */}
                     <td style={{ padding: '12px 20px', textAlign: 'right' }}>
-                      <input type="number" step="any" value={etf.holdings} onChange={(e) => updateAssetDetails(etf.id, e.target.value, String(etf.avgBuyPrice))} onClick={(e) => e.stopPropagation()} className="mono pro-input" style={{ width: '70px', textAlign: 'right' }} />
+                      <input 
+                        type="number" 
+                        step="any" 
+                        value={etf.holdings} 
+                        onChange={(e) => updateAssetDetails(etf.id, e.target.value, String(etf.avgBuyPrice))} 
+                        onBlur={forceSave} // Syncs only when you click away!
+                        onClick={(e) => e.stopPropagation()} 
+                        className="mono pro-input" 
+                        placeholder="0"
+                        style={{ width: '80px', textAlign: 'right', padding: '6px 8px', borderRadius: '4px' }} 
+                      />
                     </td>
                     <td style={{ padding: '12px 20px', textAlign: 'right' }}>
-                      <input type="number" step="any" value={etf.avgBuyPrice} onChange={(e) => updateAssetDetails(etf.id, String(etf.holdings), e.target.value)} onClick={(e) => e.stopPropagation()} className="mono pro-input" style={{ width: '80px', textAlign: 'right' }} />
+                      <input 
+                        type="number" 
+                        step="any" 
+                        value={etf.avgBuyPrice} 
+                        onChange={(e) => updateAssetDetails(etf.id, String(etf.holdings), e.target.value)} 
+                        onBlur={forceSave} // Syncs only when you click away!
+                        onClick={(e) => e.stopPropagation()} 
+                        className="mono pro-input" 
+                        placeholder="0.00"
+                        style={{ width: '90px', textAlign: 'right', padding: '6px 8px', borderRadius: '4px' }} 
+                      />
                     </td>
 
                     <td style={{ padding: '12px 20px', textAlign: 'right' }}>
@@ -116,7 +138,7 @@ export function ETFTable({ etfs, selectedETF, onSelectETF, getFlash, updateAsset
         </div>
       </div>
 
-      {/* Add Asset Modal */}
+      {/* Same Modal as Before */}
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: '#131722', padding: '24px', borderRadius: '12px', width: '400px', border: '1px solid #2A2E39', boxShadow: '0 10px 40px rgba(0,0,0,0.8)' }}>

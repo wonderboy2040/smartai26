@@ -23,11 +23,21 @@ export default function App() {
       <main style={{ maxWidth: '1600px', margin: '0 auto', padding: '24px' }}>
         <StatCards etfs={etfs} usdInrRate={usdInrRate} />
 
+        {/* PRO LAYOUT: Chart on Top, Forensics & Planner Below */}
         {selectedETF && (
-          <div className="top-pro-grid" style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: '6fr 2fr 2fr', gap: '16px' }}>
-            <TradingChart selectedETF={selectedETF} />
-            <QuantumForensics selectedETF={selectedETF} />
-            <AIPlanner etfs={etfs} usdInrRate={usdInrRate} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '24px' }}>
+            
+            {/* 1. Full Width Chart Section */}
+            <div style={{ width: '100%' }}>
+              <TradingChart selectedETF={selectedETF} />
+            </div>
+
+            {/* 2. Advanced Analytics Bottom Grid */}
+            <div className="mid-pro-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+              <QuantumForensics selectedETF={selectedETF} />
+              <AIPlanner etfs={etfs} usdInrRate={usdInrRate} />
+            </div>
+
           </div>
         )}
 
@@ -45,32 +55,23 @@ export default function App() {
         </div>
       </main>
 
-      {/* PRO TRADER GLOBAL STYLES */}
+      {/* GLOBAL STYLES */}
       <style>{`
         * { box-sizing: border-box; }
         .mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
-        
-        /* Flash Animations for ultra-fast WSS feeling */
-        .price-cell.up { color: #089981 !important; text-shadow: 0 0 10px rgba(8, 153, 129, 0.8); }
-        .price-cell.down { color: #F23645 !important; text-shadow: 0 0 10px rgba(242, 54, 69, 0.8); }
-        
-        /* Pro Inputs that blend into the table */
-        .pro-input {
-          background: transparent !important; border: 1px solid transparent !important; color: #D1D4DC !important; transition: border 0.2s;
-        }
-        .pro-input:focus, .pro-input:hover { border: 1px solid #2A2E39 !important; background: #0B0E14 !important; }
+        .text-green { color: #089981 !important; text-shadow: 0 0 8px rgba(8, 153, 129, 0.4); }
+        .text-red { color: #F23645 !important; text-shadow: 0 0 8px rgba(242, 54, 69, 0.4); }
         input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
-        /* Blinking sync light */
+        .pro-input { background: transparent !important; border: 1px solid transparent !important; color: #D1D4DC !important; transition: border 0.2s; }
+        .pro-input:focus, .pro-input:hover { border: 1px solid #2A2E39 !important; background: #0B0E14 !important; }
+        
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .sync-dot.syncing { animation: pulse 1s infinite; }
 
-        @media (max-width: 1400px) { .top-pro-grid { grid-template-columns: 5fr 3fr 3fr !important; } }
         @media (max-width: 1200px) { 
-          .top-pro-grid { grid-template-columns: 1fr 1fr !important; } 
-          .top-pro-grid > div:first-child { grid-column: 1 / -1; }
+          .mid-pro-grid { grid-template-columns: 1fr !important; }
         }
-        @media (max-width: 900px) { .top-pro-grid { grid-template-columns: 1fr !important; } }
       `}</style>
     </div>
   );

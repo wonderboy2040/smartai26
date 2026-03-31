@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ETF } from '../types';
 import { initialETFs } from '../data';
 
-// 👇 YAHAN APNA GOOGLE APPS SCRIPT WEB APP URL DALEIN 👇
-const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwHFvVybQOjaIp8Dq1QOK4Y404_Ai4ppJTNRhzssHXbtu6pqUIU_UeD3bSSU0tZQB02mA/exec';
+// 👇 YAHAN APNA NAYA GOOGLE APPS SCRIPT WEB APP URL DALEIN 👇
+const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxUE9jahTwsHRd26Bh2hDnjNkiYf9ry5MkdJcV9FL9kGHzOaEU6sjUPv20ZdBd7qnS8Yg/exec';
 
 export function useETFData() {
   const [etfs, setEtfs] = useState<ETF[]>(() => {
@@ -23,33 +23,39 @@ export function useETFData() {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
   const flashMap = useRef<Map<string, 'up' | 'down'>>(new Map());
 
-  // --- 1. PRO CLOUD SYNC ENGINE (No-CORS) ---
+  // --- 1. PRO CLOUD SYNC (CORS BYPASS METHOD) ---
   const savePortfolio = useCallback(async (newData: ETF[]) => {
     localStorage.setItem('pro_terminal_backup', JSON.stringify(newData)); 
     setEtfs(newData);
     
-    if (GOOGLE_SHEET_URL && GOOGLE_SHEET_URL !== 'https://script.google.com/macros/s/AKfycbwHFvVybQOjaIp8Dq1QOK4Y404_Ai4ppJTNRhzssHXbtu6pqUIU_UeD3bSSU0tZQB02mA/exec') {
+    if (GOOGLE_SHEET_URL && GOOGLE_SHEET_URL !== 'https://script.google.com/macros/s/AKfycbxUE9jahTwsHRd26Bh2hDnjNkiYf9ry5MkdJcV9FL9kGHzOaEU6sjUPv20ZdBd7qnS8Yg/exec') {
       setSyncStatus('syncing');
       try {
         const payload = newData.map(e => ({ id: e.id, symbol: e.symbol, holdings: e.holdings, avgBuyPrice: e.avgBuyPrice }));
-        await fetch(GOOGLE_SHEET_URL, {
+        
+        // 🚨 MAGIC FIX: Sending as 'text/plain' completely bypasses the browser's CORS block!
+        const response = await fetch(GOOGLE_SHEET_URL, {
           method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
-        setTimeout(() => setSyncStatus('synced'), 500); 
+        
+        if (response.ok) {
+          setSyncStatus('synced');
+        } else {
+          throw new Error("Network response was not ok");
+        }
       } catch (e) {
-        console.error("Cloud Save Error", e);
+        console.error("Cloud Save Error (CORS or Network):", e);
         setSyncStatus('error');
       }
     }
   }, []);
 
-  // Initial Load from Cloud
+  // Initial Cloud Load
   useEffect(() => {
     const loadCloud = async () => {
-      if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'https://script.google.com/macros/s/AKfycbwHFvVybQOjaIp8Dq1QOK4Y404_Ai4ppJTNRhzssHXbtu6pqUIU_UeD3bSSU0tZQB02mA/exec') return;
+      if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'https://script.google.com/macros/s/AKfycbxUE9jahTwsHRd26Bh2hDnjNkiYf9ry5MkdJcV9FL9kGHzOaEU6sjUPv20ZdBd7qnS8Yg/exec') return;
       setSyncStatus('syncing');
       try {
         const res = await fetch(GOOGLE_SHEET_URL);
@@ -80,32 +86,35 @@ export function useETFData() {
     return () => clearInterval(interval);
   }, []);
 
-  // --- 3. MULTI-PROXY ULTRA-FAST PRICE ENGINE ---
+  // --- 3. SMART PROXY ROTATOR FOR ULTRA-FAST PRICES (Anti-Ban) ---
   useEffect(() => {
     if (etfs.length === 0) return;
 
-    // Helper to fetch price with fallback proxies to bypass rate limits
     const fetchLivePrice = async (symbol: string, market: string) => {
       const yfSymbol = market === 'IN' ? `${symbol}.NS` : symbol;
-      const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yfSymbol}?interval=1m&_t=${Date.now()}`;
+      const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yfSymbol}?interval=1m`;
       
-      // Proxy Rotation (If one fails, try next automatically)
+      // Smart Proxy Array (Agar ek API block kare, toh dusri chalegi)
       const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl + '&_t=' + Date.now())}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+        `https://thingproxy.freeboard.io/fetch/${targetUrl}`
       ];
 
       for (const proxy of proxies) {
         try {
           const res = await fetch(proxy);
-          if (!res.ok) continue;
+          if (!res.ok) continue; // Try next proxy
           const data = await res.json();
-          return data.chart.result[0].meta.regularMarketPrice;
-        } catch (e) { continue; } // Silent fail, try next proxy
+          if (data && data.chart && data.chart.result && data.chart.result.length > 0) {
+            return data.chart.result[0].meta.regularMarketPrice;
+          }
+        } catch (e) { continue; } // Silent fail, loop to next
       }
-      return null; // Both failed
+      return null; // Sab fail ho gaye (No internet or heavy block)
     };
 
+    // Polling interval 6 seconds (Best balance for real-time feel and preventing API bans)
     const interval = setInterval(async () => {
       const updatedEtfs = await Promise.all(etfs.map(async (etf) => {
         const currentPrice = await fetchLivePrice(etf.symbol, etf.market);
@@ -116,35 +125,25 @@ export function useETFData() {
           
           return { ...etf, price: currentPrice, prevPrice: etf.price };
         }
-        return etf; // Return old data if fetch failed
+        return etf; 
       }));
 
       setEtfs(updatedEtfs);
-      
-      // Clear WSS tick flash effect smoothly
-      setTimeout(() => flashMap.current.clear(), 400); 
-    }, 4000); // 4 Seconds is the sweet spot to avoid getting IP blocked while feeling realtime
+      setTimeout(() => flashMap.current.clear(), 600); 
+    }, 6000); 
 
     return () => clearInterval(interval);
   }, [etfs]);
 
-  // --- 4. ACTIONS (Zero Lag Typing) ---
+  // --- 4. ACTIONS ---
   const updateAssetDetails = useCallback((id: string, qty: string, avgPrice: string) => {
     setEtfs(prev => prev.map(e => e.id === id ? { ...e, holdings: qty, avgBuyPrice: avgPrice } : e));
   }, []);
 
   const forceSave = useCallback(() => savePortfolio(etfs), [etfs, savePortfolio]);
   
-  const addAsset = useCallback((newAsset: ETF) => {
-    savePortfolio([...etfs, newAsset]);
-  }, [etfs, savePortfolio]);
-  
-  const deleteAsset = useCallback((id: string) => {
-    savePortfolio(etfs.filter(e => e.id !== id));
-  }, [etfs, savePortfolio]);
+  const addAsset = useCallback((newAsset: ETF) => savePortfolio([...etfs, newAsset]), [etfs, savePortfolio]);
+  const deleteAsset = useCallback((id: string) => savePortfolio(etfs.filter(e => e.id !== id)), [etfs, savePortfolio]);
 
-  return { 
-    etfs, selectedETF, selectETF: setSelectedETF, getFlash: (id: string) => flashMap.current.get(id), 
-    usdInrRate, updateAssetDetails, addAsset, deleteAsset, forceSave, syncStatus 
-  };
+  return { etfs, selectedETF, selectETF: setSelectedETF, getFlash: (id: string) => flashMap.current.get(id), usdInrRate, updateAssetDetails, addAsset, deleteAsset, forceSave, syncStatus };
 }
